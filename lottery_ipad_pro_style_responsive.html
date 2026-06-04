@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lottery iPad Pro Style</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f5f5f7; overflow-x: hidden; }
+        .ipad-card { background: #ffffff; border-radius: 24px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); transition: transform 0.2s; cursor: pointer; }
+        .ipad-card:active { transform: scale(0.98); }
+        .ios-input { background: #f0f0f0; border: none; transition: color 0.3s ease; }
+        input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+        
+        .clock { 
+            width: 140px; height: 140px; border: 4px solid #333; border-radius: 50%; 
+            position: relative; margin: 0 auto; background: #111;
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.2), inset 0 0 20px rgba(0,0,0,0.5);
+        }
+        
+        .hand { 
+            position: absolute; bottom: 50%; left: 50%; transform-origin: bottom; 
+            border-radius: 4px; z-index: 10;
+            filter: drop-shadow(0 0 5px rgba(255,255,255,0.8));
+        }
+        .hour-hand { width: 5px; height: 35px; margin-left: -2.5px; background: #fff; }
+        .minute-hand { width: 4px; height: 50px; margin-left: -2px; background: #fff; }
+        .second-hand { width: 2px; height: 55px; margin-left: -1px; background: #ff3b30; filter: drop-shadow(0 0 8px #ff3b30); }
+        
+        .number { 
+            position: absolute; width: 100%; height: 100%; text-align: center; color: #fff; 
+            font-size: 14px; font-weight: bold; padding-top: 5px; text-shadow: 0 0 5px #fff;
+        }
+
+        .rgb-glow { position: relative; background: #ffffff; border-radius: 24px; }
+        .rgb-glow::before {
+            content: ""; position: absolute; 
+            top: -8px; left: -8px; right: -8px; bottom: -8px; /* Increased offset for thickness */
+            background: linear-gradient(45deg, #ff0000, #ff7300, #fffb00, #48ff00, #00ffd5, #002bff, #7a00ff, #ff00c8, #ff0000);
+            background-size: 400%; border-radius: 32px; z-index: -1; animation: rgb-animation 10s linear infinite;
+        }
+        @keyframes rgb-animation {
+            0% { background-position: 0 0; } 50% { background-position: 300% 0; } 100% { background-position: 0 0; }
+        }
+        #toast { transition: opacity 0.3s; z-index: 50; }
+    </style>
+</head>
+<body class="p-4 md:p-16">
+
+    <div class="max-w-4xl mx-auto rgb-glow p-4 md:p-12">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 items-center">
+            
+            <div class="flex flex-col gap-6">
+                <div class="text-center">
+                    <div class="clock mb-6">
+                        <script>
+                            for(let i=1; i<=12; i++) {
+                                document.write(`<div class="number" style="transform: rotate(${i*30}deg)"><div style="transform: rotate(-${i*30}deg)">${i}</div></div>`);
+                            }
+                        </script>
+                        <div class="hand hour-hand" id="hourHand"></div>
+                        <div class="hand minute-hand" id="minuteHand"></div>
+                        <div class="hand second-hand" id="secondHand"></div>
+                    </div>
+                    <div id="date-display" class="text-sm md:text-lg text-gray-500 font-medium"></div>
+                </div>
+
+                <div>
+                    <h1 class="text-2xl md:text-3xl font-bold text-gray-800 mb-4 text-center md:text-left">กรอกผลรางวัล</h1>
+                    <input 
+                        type="number" id="lottery-input" placeholder="00000" 
+                        class="w-full h-16 md:h-24 text-center text-4xl md:text-6xl font-bold ios-input rounded-3xl tracking-[0.2em] md:tracking-[0.5em] outline-none"
+                        oninput="handleInput(this)"
+                    >
+                    <p id="error-msg" class="text-red-500 text-sm mt-4 hidden text-center">กรุณากรอกให้ครบ 5 ตัว</p>
+                </div>
+            </div>
+
+            <div class="grid grid-rows-2 gap-6">
+                <div class="ipad-card p-6 md:p-8 border border-gray-100 bg-blue-50" onclick="copyToClipboard('มัดบนตรง 8 ตัว', ['up-res-1', 'up-res-2'])">
+                    <p class="text-xs md:text-sm text-blue-800 font-bold uppercase tracking-widest mb-4">มัดบนตรง 8 ตัว (คลิกเพื่อคัดลอก)</p>
+                    <div id="up-res-1" class="text-blue-900 font-mono font-bold text-xl md:text-3xl mb-2 break-all">--------</div>
+                    <div id="up-res-2" class="text-blue-700 font-mono font-bold text-xl md:text-3xl break-all">--------</div>
+                </div>
+                <div class="ipad-card p-6 md:p-8 border border-gray-100 bg-emerald-50" onclick="copyToClipboard('มัดล่างตรง 8 ตัว', ['down-res-1', 'down-res-2'])">
+                    <p class="text-xs md:text-sm text-emerald-800 font-bold uppercase tracking-widest mb-4">มัดล่างตรง 8 ตัว (คลิกเพื่อคัดลอก)</p>
+                    <div id="down-res-1" class="text-emerald-900 font-mono font-bold text-xl md:text-3xl mb-2 break-all">--------</div>
+                    <div id="down-res-2" class="text-emerald-700 font-mono font-bold text-xl md:text-3xl break-all">--------</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast" class="fixed bottom-10 left-1/2 -translate-x-1/2 bg-gray-900 text-white px-6 py-3 rounded-full opacity-0 pointer-events-none">
+        คัดลอกเรียบร้อยแล้ว!
+    </div>
+
+    <script>
+        const colors = ['#ef4444', '#f59e0b', '#10b981', '#3b82f6', '#8b5cf6', '#ec4899', '#06b6d4'];
+
+        function updateUI() {
+            const now = new Date();
+            const s = now.getSeconds();
+            const m = now.getMinutes();
+            const h = now.getHours();
+            document.getElementById('secondHand').style.transform = `rotate(${s * 6}deg)`;
+            document.getElementById('minuteHand').style.transform = `rotate(${m * 6 + s * 0.1}deg)`;
+            document.getElementById('hourHand').style.transform = `rotate(${h * 30 + m * 0.5}deg)`;
+            document.getElementById('date-display').innerText = now.toLocaleDateString('th-TH', { dateStyle: 'full' });
+        }
+        setInterval(updateUI, 1000);
+        updateUI();
+
+        function showToast() {
+            const toast = document.getElementById('toast');
+            toast.style.opacity = '1';
+            setTimeout(() => { toast.style.opacity = '0'; }, 2000);
+        }
+
+        function copyToClipboard(title, elementIds) {
+            let textToCopy = `${title}:\n`;
+            elementIds.forEach(id => {
+                const content = document.getElementById(id).innerText;
+                if (content !== "--------") textToCopy += `${content}\n`;
+            });
+            
+            if (textToCopy.includes("--------")) return; 
+
+            const textarea = document.createElement("textarea");
+            textarea.value = textToCopy;
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand("copy");
+            document.body.removeChild(textarea);
+            showToast();
+        }
+
+        function handleInput(el) {
+            const randomColor = colors[Math.floor(Math.random() * colors.length)];
+            el.style.color = randomColor;
+
+            if (el.value.length > 5) el.value = el.value.slice(0, 5);
+            const errorMsg = document.getElementById('error-msg');
+            if (el.value.length > 0 && el.value.length < 5) errorMsg.classList.remove('hidden');
+            else {
+                errorMsg.classList.add('hidden');
+                if (el.value.length === 5) updateCalculations(el.value);
+                else clearResults();
+            }
+        }
+
+        function clearResults() {
+            document.getElementById('up-res-1').innerText = "--------";
+            document.getElementById('up-res-2').innerText = "--------";
+            document.getElementById('down-res-1').innerText = "--------";
+            document.getElementById('down-res-2').innerText = "--------";
+        }
+
+        function getSequence(startDigit, length = 8) {
+            let seq = "";
+            let current = startDigit;
+            for (let i = 0; i < length; i++) {
+                seq += current;
+                current = (current + 1) % 10;
+            }
+            return seq;
+        }
+
+        function getModifiedSequence(startDigit) {
+            let nextStart = (startDigit + 1) % 10;
+            if (nextStart === 0) nextStart = 1;
+            let seq = "";
+            let current = nextStart;
+            for (let i = 0; i < 8; i++) {
+                seq += current;
+                current++;
+                if (current > 9) current = 1;
+            }
+            return seq;
+        }
+
+        function updateCalculations(val) {
+            const thousandDigit = parseInt(val[1]);
+            document.getElementById('up-res-1').innerText = getSequence(thousandDigit);
+            document.getElementById('up-res-2').innerText = getModifiedSequence(thousandDigit);
+            document.getElementById('down-res-1').innerText = getSequence((thousandDigit + 2) % 10);
+            document.getElementById('down-res-2').innerText = getSequence((thousandDigit + 3) % 10);
+        }
+    </script>
+</body>
+</html>
